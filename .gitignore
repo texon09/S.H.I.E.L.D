@@ -1,0 +1,30 @@
+# Dependencies
+node_modules/
+dist/
+build/
+.env
+
+# Python compilation files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.ipynb_checkpoints/
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# System / IDE files
+.DS_Store
+Thumbs.db
+.agents/
+.gemini/
+.vscode/
+.idea/
+
+# Large binary files (Dataset remains local or tracked separately)
+*.csv
+*.pkl
+*.db

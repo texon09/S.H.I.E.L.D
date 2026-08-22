@@ -1,0 +1,6 @@
+RandomForestClassifier Evaluation Metrics:
+-----------------------------------------
+Accuracy:  0.8300
+Precision: 0.8971
+Recall:    0.7409
+F1-Score:  0.8115

@@ -1,0 +1,20 @@
+S.H.I.E.L.D. Pipeline Evaluation Report
+======================================
+Sample Trained: 30000 records
+Winning Model Classifier: RandomForest
+Optimal Hyperparameters: {'classifier__n_estimators': 150, 'classifier__min_samples_split': 10, 'classifier__max_depth': 20}
+ROC-AUC Score: 0.9992
+
+Classification Details:
+                precision    recall  f1-score   support
+
+  Phishing (0)       1.00      1.00      1.00      2569
+Legitimate (1)       1.00      1.00      1.00      3431
+
+      accuracy                           1.00      6000
+     macro avg       1.00      1.00      1.00      6000
+  weighted avg       1.00      1.00      1.00      6000
+
+Confusion Matrix:
+[[2557   12]
+ [   4 3427]]

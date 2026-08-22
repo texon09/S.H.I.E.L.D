@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PhishShield Extension</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <!-- Header Area -->
+    <header>
+      <div class="brand-group">
+        <span class="brand-icon">🛡️</span>
+        <span class="brand-name">PhishShield</span>
+      </div>
+      <div class="header-actions">
+        <span class="header-action-btn">⏱️</span>
+        <span class="header-action-btn">⚙️</span>
+      </div>
+    </header>
+
+    <!-- Loader Panel -->
+    <div id="loader" class="loader-container">
+      <div class="spinner"></div>
+      <p>S.H.I.E.L.D. is analyzing page URL...</p>
+    </div>
+
+    <!-- Error/Unreachable Panel -->
+    <div id="error-card" class="error-container hidden">
+      <p class="error-text">⚠️ Cannot connect to backend server. Ensure the S.H.I.E.L.D. uvicorn engine is running on port 8000.</p>
+      <button id="retry-btn" class="action-button">Retry Connection</button>
+    </div>
+
+    <!-- Scan Results Panel (matching screen.png / screen 3.png) -->
+    <div id="result-card" class="results-container hidden">
+      <!-- 1. Central Alert Circle -->
+      <div class="alert-circle-outer">
+        <div class="alert-circle-inner" id="alert-circle-icon">
+          ⚠️
+        </div>
+      </div>
+
+      <!-- 2. Verdict Badge & Score Row -->
+      <div class="verdict-score-row">
+        <span id="verdict-badge" class="verdict-capsule-badge">PHISHING</span>
+        <span class="verdict-score-number"><span id="risk-score">84</span><span class="score-denominator">/100</span></span>
+      </div>
+
+      <!-- 3. Dynamic Warning Text -->
+      <h2 id="warning-text" class="verdict-title">Strong phishing signals detected. Avoid this site.</h2>
+
+      <!-- 4. Scanned URL Capsule Pill -->
+      <div class="url-pill-box">
+        <span class="pill-link-icon">🔗</span>
+        <span id="scanned-url" class="pill-url-text">https://example-secure-login.com</span>
+      </div>
+
+      <!-- 5. Key Findings Card -->
+      <div class="findings-card">
+        <div class="findings-header">
+          <span class="findings-icon">📋</span>
+          <h3>Key Findings</h3>
+        </div>
+        <div id="findings-list" class="findings-list">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+
+      <!-- 6. Close Warning Bottom Button -->
+      <button id="close-warning-btn" class="close-button">Close warning</button>
+    </div>
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>

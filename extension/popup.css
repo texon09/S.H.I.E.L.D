@@ -1,0 +1,343 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+:root {
+  /* Light Mode (Default) */
+  --bg-color: #f8fafc;
+  --text-main: #0f172a;
+  --text-muted: #64748b;
+  --card-bg: #ffffff;
+  --border-color: #e2e8f0;
+  --pill-bg: #f1f5f9;
+  --button-bg: #0f172a;
+  --button-text: #ffffff;
+  
+  --safe-color: #10b981;
+  --safe-bg: #d1fae5;
+  --suspicious-color: #d97706;
+  --suspicious-bg: #fef3c7;
+  --phishing-color: #b91c1c;
+  --phishing-bg: #fee2e2;
+  
+  --font-family: 'Inter', -apple-system, sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* Dark Mode Override */
+    --bg-color: #121824;
+    --text-main: #f4f5f6;
+    --text-muted: #8b97a2;
+    --card-bg: #182232;
+    --border-color: #243042;
+    --pill-bg: #1b2637;
+    --button-bg: #e4e7eb;
+    --button-text: #0c111d;
+    
+    --safe-color: #10b981;
+    --safe-bg: rgba(16, 185, 129, 0.15);
+    --suspicious-color: #f59e0b;
+    --suspicious-bg: rgba(245, 158, 11, 0.15);
+    --phishing-color: #ef4444;
+    --phishing-bg: rgba(239, 68, 68, 0.15);
+  }
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-family);
+  background-color: var(--bg-color);
+  color: var(--text-main);
+  width: 350px;
+  overflow-x: hidden;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.container {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Header */
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 12px;
+  margin-bottom: 20px;
+}
+
+.brand-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.brand-icon {
+  font-size: 20px;
+}
+
+.brand-name {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.header-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.header-action-btn {
+  font-size: 16px;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+}
+
+.header-action-btn:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+/* Loader style */
+.loader-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 0;
+  gap: 16px;
+}
+
+.spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid rgba(59, 130, 246, 0.1);
+  border-radius: 50%;
+  border-top-color: #3b82f6;
+  animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.loader-container p {
+  font-size: 12.5px;
+  color: var(--text-muted);
+}
+
+/* Error style */
+.error-container {
+  text-align: center;
+  padding: 24px 0;
+}
+
+.error-text {
+  font-size: 13px;
+  color: #fda4af;
+  line-height: 1.5;
+  margin-bottom: 16px;
+}
+
+.action-button {
+  background-color: var(--button-bg);
+  color: var(--button-text);
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-family: var(--font-family);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Results Content Container */
+.results-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+/* Central Alert Circle matching mockups */
+.alert-circle-outer {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background-color: var(--phishing-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s;
+}
+
+.alert-circle-inner {
+  font-size: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Threat Score and Verdict capsule badge */
+.verdict-score-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.verdict-capsule-badge {
+  font-size: 11px;
+  font-weight: 800;
+  padding: 4px 12px;
+  border-radius: 9999px;
+  letter-spacing: 0.5px;
+}
+
+.badge-phishing {
+  background-color: var(--phishing-bg);
+  color: var(--phishing-color);
+}
+
+.badge-suspicious {
+  background-color: var(--suspicious-bg);
+  color: var(--suspicious-color);
+}
+
+.badge-safe {
+  background-color: var(--safe-bg);
+  color: var(--safe-color);
+}
+
+.verdict-score-number {
+  font-size: 24px;
+  font-weight: 800;
+}
+
+.score-denominator {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+/* Verdict Title Alert statement */
+.verdict-title {
+  font-size: 15px;
+  font-weight: 700;
+  text-align: center;
+  line-height: 1.4;
+  max-width: 280px;
+}
+
+.title-phishing {
+  color: var(--phishing-color);
+}
+.title-suspicious {
+  color: var(--suspicious-color);
+}
+.title-safe {
+  color: var(--safe-color);
+}
+
+/* URL Pill Box */
+.url-pill-box {
+  width: 100%;
+  background-color: var(--pill-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 9999px;
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pill-link-icon {
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+.pill-url-text {
+  font-family: monospace;
+  font-size: 12.5px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  flex: 1;
+}
+
+/* Key Findings Card */
+.findings-card {
+  width: 100%;
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 14px;
+}
+
+.findings-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-main);
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 8px;
+}
+
+.findings-icon {
+  font-size: 14px;
+}
+
+.findings-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.finding-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12.5px;
+  font-weight: 500;
+}
+
+.finding-score {
+  font-weight: 700;
+}
+.finding-score.risky {
+  color: var(--phishing-color);
+}
+.finding-score.safe {
+  color: var(--safe-color);
+}
+
+/* Close warning bottom button */
+.close-button {
+  width: 100%;
+  background-color: var(--button-bg);
+  color: var(--button-text);
+  border: none;
+  padding: 14px 0;
+  border-radius: 8px;
+  font-family: var(--font-family);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  margin-top: 8px;
+  transition: opacity 0.2s;
+}
+
+.close-button:hover {
+  opacity: 0.9;
+}
+
+.hidden {
+  display: none !important;
+}
