@@ -359,3 +359,121 @@ body {
   text-transform: uppercase;
   border: 1px solid;
 }
+/* --- MOBILE RESPONSIVE DESIGN --- */
+@media (max-width: 900px) {
+  .app-layout {
+    flex-direction: column;
+    height: auto;
+    min-height: 100vh;
+    overflow-y: auto;
+  }
+  
+  .sidebar {
+    width: 100%;
+    height: auto;
+    border-right: none;
+    border-bottom: 1px solid var(--border-color);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  
+  .brand {
+    padding: 16px;
+    border-bottom: 1px solid var(--border-color);
+  }
+  
+  .nav-menu {
+    display: flex;
+    flex-direction: row;
+    overflow-x: auto;
+    padding: 0;
+    white-space: nowrap;
+  }
+  
+  .nav-item {
+    padding: 16px;
+    border-left: none;
+    border-bottom: 2px solid transparent;
+  }
+  
+  .nav-item:hover, .nav-item.active {
+    border-left: none;
+    border-bottom: 2px solid var(--text-main);
+  }
+  
+  .sidebar > div:last-child {
+    display: none;
+  }
+
+  .main-wrapper {
+    overflow-y: visible;
+  }
+
+  .top-header {
+    height: auto;
+    padding: 16px;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .top-header > div {
+    width: 100%;
+    display: flex;
+    justify-content: stretch;
+  }
+  
+  .top-header .btn {
+    width: 100%;
+  }
+
+  .content-area {
+    padding: 24px 16px;
+  }
+
+  .col-8, .col-6, .col-4 {
+    grid-column: span 12;
+  }
+
+  .hero-title {
+    font-size: 36px;
+    letter-spacing: 2px !important;
+  }
+
+  .hero-subtitle {
+    font-size: 16px;
+    padding: 0 16px;
+  }
+  
+  .scanner-bar {
+    flex-direction: column;
+  }
+  
+  .scanner-bar button {
+    border-left: none;
+    border-top: 1px solid var(--border-color);
+    padding: 16px;
+  }
+
+  .feature-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .feature-bar-container {
+    width: 100%;
+    margin: 0;
+  }
+
+  .feature-value {
+    width: 100%;
+    text-align: left;
+  }
+}
+
+@media (max-width: 900px) {
+  .data-table-wrapper, .panel {
+    overflow-x: auto;
+  }
+}
