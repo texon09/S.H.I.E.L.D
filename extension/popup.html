@@ -3,73 +3,183 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PhishShield Extension</title>
-  <link rel="stylesheet" href="popup.css">
+  <title>S.H.I.E.L.D.</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@400;700&display=swap');
+    
+    :root {
+      --bg-color: #000000;
+      --bg-panel: #0a0a0a;
+      --border-color: #333333;
+      --text-main: #ffffff;
+      --text-muted: #888888;
+      
+      --safe-color: #00ff66;
+      --suspicious-color: #ffcc00;
+      --danger-color: #ff3333;
+    }
+
+    body {
+      background: var(--bg-color);
+      color: var(--text-main);
+      font-family: 'Inter', sans-serif;
+      margin: 0;
+      width: 320px;
+      overflow-x: hidden;
+      border: 1px solid var(--border-color);
+    }
+
+    .mono { font-family: 'JetBrains Mono', monospace; }
+
+    header {
+      padding: 16px;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--bg-panel);
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 16px;
+      letter-spacing: 2px;
+      font-weight: 700;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--safe-color);
+    }
+
+    .container {
+      padding: 16px;
+    }
+
+    .hidden { display: none !important; }
+
+    /* Cards */
+    .panel {
+      border: 1px solid var(--border-color);
+      padding: 16px;
+      margin-bottom: 16px;
+      background: var(--bg-panel);
+    }
+
+    .verdict-box {
+      text-align: center;
+      border-top: 4px solid var(--text-muted);
+    }
+
+    .score {
+      font-size: 48px;
+      font-weight: bold;
+      line-height: 1;
+      margin: 8px 0;
+    }
+
+    .tier {
+      font-size: 16px;
+      font-weight: bold;
+      letter-spacing: 2px;
+    }
+
+    .url-box {
+      font-size: 11px;
+      color: var(--text-muted);
+      word-break: break-all;
+      padding: 8px;
+      border: 1px solid var(--border-color);
+      background: #000;
+      margin-bottom: 16px;
+    }
+
+    .finding-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      margin-bottom: 8px;
+      border-bottom: 1px dashed var(--border-color);
+      padding-bottom: 4px;
+    }
+    .finding-row:last-child { border-bottom: none; }
+
+    .btn {
+      width: 100%;
+      padding: 12px;
+      background: transparent;
+      color: var(--text-main);
+      border: 1px solid var(--text-main);
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: bold;
+      cursor: pointer;
+      text-transform: uppercase;
+    }
+
+    .btn:hover {
+      background: var(--text-main);
+      color: var(--bg-color);
+    }
+
+    .spinner {
+      width: 24px;
+      height: 24px;
+      border: 2px solid var(--border-color);
+      border-top-color: var(--text-main);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 16px;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+  </style>
 </head>
 <body>
+  <header>
+    <h1>S.H.I.E.L.D.</h1>
+    <div class="status-dot" id="system-status"></div>
+  </header>
+
   <div class="container">
-    <!-- Header Area -->
-    <header>
-      <div class="brand-group">
-        <span class="brand-icon">🛡️</span>
-        <span class="brand-name">PhishShield</span>
-      </div>
-      <div class="header-actions">
-        <span class="header-action-btn">⏱️</span>
-        <span class="header-action-btn">⚙️</span>
-      </div>
-    </header>
-
-    <!-- Loader Panel -->
-    <div id="loader" class="loader-container">
+    
+    <!-- Loader -->
+    <div id="loader" style="text-align: center; padding: 40px 0;">
       <div class="spinner"></div>
-      <p>S.H.I.E.L.D. is analyzing page URL...</p>
+      <div class="mono" style="font-size: 12px; color: var(--text-muted);">ANALYZING LINK...</div>
     </div>
 
-    <!-- Error/Unreachable Panel -->
-    <div id="error-card" class="error-container hidden">
-      <p class="error-text">⚠️ Cannot connect to backend server. Ensure the S.H.I.E.L.D. uvicorn engine is running on port 8000.</p>
-      <button id="retry-btn" class="action-button">Retry Connection</button>
+    <!-- Error -->
+    <div id="error-card" class="panel hidden" style="border-top-color: var(--danger-color);">
+      <div class="mono" style="color: var(--danger-color); font-size: 12px; margin-bottom: 16px;" id="error-text">
+        [ SYSTEM OFFLINE ]<br><br>Cannot connect to local engine.
+      </div>
+      <button class="btn" id="retry-btn">RETRY CONNECTION</button>
     </div>
 
-    <!-- Scan Results Panel (matching screen.png / screen 3.png) -->
-    <div id="result-card" class="results-container hidden">
-      <!-- 1. Central Alert Circle -->
-      <div class="alert-circle-outer">
-        <div class="alert-circle-inner" id="alert-circle-icon">
-          ⚠️
+    <!-- Results -->
+    <div id="result-card" class="hidden">
+      
+      <div class="url-box mono" id="scanned-url">https://example.com</div>
+
+      <div class="panel verdict-box" id="verdict-box">
+        <div class="tier mono" id="verdict-tier">ANALYZING</div>
+        <div class="score mono" id="risk-score">--</div>
+        <div class="mono" style="font-size: 10px; color: var(--text-muted);" id="warning-text">...</div>
+      </div>
+
+      <div class="panel">
+        <div class="mono" style="font-size: 12px; margin-bottom: 12px; color: var(--text-muted);">[ SMART LINK ANALYSIS ]</div>
+        <div id="findings-list" class="mono">
+          <!-- Populated via JS -->
         </div>
       </div>
 
-      <!-- 2. Verdict Badge & Score Row -->
-      <div class="verdict-score-row">
-        <span id="verdict-badge" class="verdict-capsule-badge">PHISHING</span>
-        <span class="verdict-score-number"><span id="risk-score">84</span><span class="score-denominator">/100</span></span>
-      </div>
-
-      <!-- 3. Dynamic Warning Text -->
-      <h2 id="warning-text" class="verdict-title">Strong phishing signals detected. Avoid this site.</h2>
-
-      <!-- 4. Scanned URL Capsule Pill -->
-      <div class="url-pill-box">
-        <span class="pill-link-icon">🔗</span>
-        <span id="scanned-url" class="pill-url-text">https://example-secure-login.com</span>
-      </div>
-
-      <!-- 5. Key Findings Card -->
-      <div class="findings-card">
-        <div class="findings-header">
-          <span class="findings-icon">📋</span>
-          <h3>Key Findings</h3>
-        </div>
-        <div id="findings-list" class="findings-list">
-          <!-- Populated dynamically -->
-        </div>
-      </div>
-
-      <!-- 6. Close Warning Bottom Button -->
-      <button id="close-warning-btn" class="close-button">Close warning</button>
+      <button class="btn" id="close-btn">DISMISS</button>
     </div>
+
   </div>
   <script src="popup.js"></script>
 </body>

@@ -22,7 +22,7 @@ FEATURE_NAMES = [
     'HasObfuscation', 'NoOfObfuscatedChar', 'ObfuscationRatio', 'NoOfLettersInURL', 
     'LetterRatioInURL', 'NoOfDegitsInURL', 'DegitRatioInURL', 'NoOfEqualsInURL', 
     'NoOfQMarkInURL', 'NoOfAmpersandInURL', 'NoOfOtherSpecialCharsInURL', 
-    'SpacialCharRatioInURL', 'IsHTTPS', 'TLD'
+    'SpacialCharRatioInURL', 'IsHTTPS'
 ]
 
 FEATURE_EXPLANATIONS = {
@@ -121,16 +121,16 @@ def extract_features(url: str) -> dict:
     if not url.startswith(('http://', 'https://')):
         parsed_url = 'http://' + url
     
-    try:
-        parsed = urlparse(parsed_url)
-        domain = parsed.netloc
-    except Exception:
-        domain = ""
-        parsed = None
-
+    # Use tldextract for robust domain parsing
+    ext = tldextract.extract(parsed_url)
+    domain_clean = ext.domain
+    tld = ext.suffix
+    subdomain = ext.subdomain
+    
     url_len = len(url)
-    domain_clean = domain.split(':')[0] if domain else ""
-    domain_len = len(domain_clean)
+    domain_len = len(domain_clean) if domain_clean else 0
+    tld_len = len(tld) if tld else 0
+    subdomain_count = len(subdomain.split('.')) if subdomain else 0
 
     # IsDomainIP
     is_ip = 0
@@ -143,20 +143,6 @@ def extract_features(url: str) -> dict:
                 is_ip = 1
             except ValueError:
                 is_ip = 0
-
-    # TLD extraction using tldextract
-    tld = ""
-    subdomain_count = 0
-    if domain_clean:
-        try:
-            ext = tldextract.extract(parsed_url)
-            tld = ext.suffix
-            subdomain = ext.subdomain
-            if subdomain:
-                subdomain_count = len(subdomain.split('.'))
-        except Exception:
-            pass
-    tld_len = len(tld)
 
     # Obfuscation characters (standard special chars used to hide keywords)
     obfuscated_chars = ['%', '@', ':', ';', '$']
@@ -187,7 +173,6 @@ def extract_features(url: str) -> dict:
         'URLLength': url_len,
         'DomainLength': domain_len,
         'IsDomainIP': is_ip,
-        'TLD': tld if tld else 'com',
         'TLDLength': tld_len,
         'NoOfSubDomain': subdomain_count,
         'HasObfuscation': has_obfuscation,
@@ -233,12 +218,9 @@ class PhishingClassifier:
                 preprocessor = self.model.named_steps['preprocessor']
                 
                 # Get the preprocessor feature names
-                numeric_cols = [c for c in FEATURE_NAMES if c != 'TLD']
+                numeric_cols = FEATURE_NAMES.copy()
                 engineered_cols = ['ObfuscationURLLengthInteraction', 'SubdomainPerDomainLength', 'SpecialCharPerLetter']
-                all_numeric_cols = numeric_cols + engineered_cols
-                
-                onehot_cols = list(preprocessor.named_transformers_['cat'].named_steps['onehot'].get_feature_names_out(['TLD']))
-                all_features = all_numeric_cols + onehot_cols
+                all_features = numeric_cols + engineered_cols
                 
                 # Filter by kept indices in collinearity filter
                 kept_features = [all_features[i] for i in collinear_filter.keep_indices_]
@@ -248,9 +230,7 @@ class PhishingClassifier:
                 self.feature_importances = {}
                 for idx, feat_name in enumerate(kept_features):
                     base_name = feat_name
-                    if feat_name.startswith('TLD_'):
-                        base_name = 'TLD'
-                    elif feat_name == 'ObfuscationURLLengthInteraction':
+                    if feat_name == 'ObfuscationURLLengthInteraction':
                         base_name = 'ObfuscationRatio'
                     elif feat_name == 'SubdomainPerDomainLength':
                         base_name = 'NoOfSubDomain'

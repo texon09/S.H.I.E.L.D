@@ -24,7 +24,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 
 # Define paths
-DATA_PATH = r"docs\PhiUSIIL_Phishing_URL_Dataset.csv"
+DATA_PATH = "docs/real_world_dataset.csv"
 OUTPUT_DIR = "backend/data"
 MODEL_EXPORT_PATH = os.path.join(OUTPUT_DIR, "phishing_pipeline.pkl")
 METRICS_EXPORT_PATH = os.path.join(OUTPUT_DIR, "pipeline_metrics.txt")
@@ -109,18 +109,23 @@ def run_ml_pipeline(sample_size=30000):
     full_df = pd.read_csv(DATA_PATH)
     print(f"Full dataset shape: {full_df.shape}")
 
+    # Use actual sample size based on dataframe
+    sample_size = min(sample_size, len(full_df))
     # 2.2 Stratified Sampling to preserve class distribution for quick cross-validation
     print(f"Sampling {sample_size} records using stratified sampling...")
-    df, _ = train_test_split(
-        full_df, 
-        train_size=sample_size, 
-        stratify=full_df['label'], 
-        random_state=42
-    )
+    if sample_size < len(full_df):
+        df, _ = train_test_split(
+            full_df, 
+            train_size=sample_size, 
+            stratify=full_df['label'], 
+            random_state=42
+        )
+    else:
+        df = full_df.copy()
     print(f"Sampled class ratios:\n{df['label'].value_counts(normalize=True)}")
 
     # 2.3 Separate target and feature variables
-    X = df.drop(columns=['label'])
+    X = df.drop(columns=['label', 'url'], errors='ignore')
     y = df['label']
 
     # 2.4 Train-Test Split (Holdout Validation split)
@@ -141,11 +146,11 @@ def run_ml_pipeline(sample_size=30000):
     engineered_cols = ['ObfuscationURLLengthInteraction', 'SubdomainPerDomainLength', 'SpecialCharPerLetter']
     final_numeric_cols = lexical_numeric_cols + engineered_cols
     
-    categorical_cols = ['TLD']
+    categorical_cols = []
     
     # Restrict X_train and X_test to only contain the whitelisted lexical columns
-    X_train = X_train[lexical_numeric_cols + ['TLD']]
-    X_test = X_test[lexical_numeric_cols + ['TLD']]
+    X_train = X_train[lexical_numeric_cols]
+    X_test = X_test[lexical_numeric_cols]
 
     # 2.5 Data Preprocessing & Pipeline Architecture
     print("Structuring sklearn preprocessors...")
@@ -154,15 +159,9 @@ def run_ml_pipeline(sample_size=30000):
         ('scaler', StandardScaler())
     ])
 
-    categorical_transformer = Pipeline(steps=[
-        ('imputer', SimpleImputer(strategy='most_frequent')),
-        ('onehot', OneHotEncoder(handle_unknown='ignore', sparse_output=False))
-    ])
-
     preprocessor = ColumnTransformer(
         transformers=[
-            ('num', numeric_transformer, final_numeric_cols),
-            ('cat', categorical_transformer, categorical_cols)
+            ('num', numeric_transformer, final_numeric_cols)
         ]
     )
 

@@ -5,7 +5,6 @@ from datetime import datetime
 DB_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'data', 'phishing_history.db')
 
 def get_db_connection():
-    # Make sure data folder exists
     os.makedirs(os.path.dirname(DB_FILE), exist_ok=True)
     conn = sqlite3.connect(DB_FILE)
     conn.row_factory = sqlite3.Row
@@ -25,6 +24,12 @@ def init_db():
             ml_confidence REAL NOT NULL,
             reputation_hit INTEGER NOT NULL,
             response_time_ms INTEGER NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS whitelist (
+            url TEXT PRIMARY KEY,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     ''')
@@ -48,27 +53,33 @@ def save_scan(url: str, final_url: str, risk_score: int, risk_tier: str,
 def get_scan_history(limit: int = 50):
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute('''
-        SELECT id, url, final_url, risk_score, risk_tier, ml_prediction, ml_confidence, reputation_hit, response_time_ms, created_at
-        FROM scans
-        ORDER BY id DESC
-        LIMIT ?
-    ''', (limit,))
+    cursor.execute('SELECT * FROM scans ORDER BY id DESC LIMIT ?', (limit,))
     rows = cursor.fetchall()
     conn.close()
-    
-    history = []
-    for r in rows:
-        history.append({
-            "id": r["id"],
-            "url": r["url"],
-            "final_url": r["final_url"],
-            "risk_score": r["risk_score"],
-            "risk_tier": r["risk_tier"],
-            "ml_prediction": r["ml_prediction"],
-            "ml_confidence": r["ml_confidence"],
-            "reputation_hit": bool(r["reputation_hit"]),
-            "response_time_ms": r["response_time_ms"],
-            "created_at": r["created_at"]
-        })
-    return history
+    return [dict(r) for r in rows]
+
+def clear_scans():
+    conn = get_db_connection()
+    conn.cursor().execute('DELETE FROM scans')
+    conn.commit()
+    conn.close()
+
+def add_to_whitelist(url: str):
+    conn = get_db_connection()
+    conn.cursor().execute('INSERT OR IGNORE INTO whitelist (url) VALUES (?)', (url,))
+    conn.commit()
+    conn.close()
+
+def get_whitelist():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute('SELECT url FROM whitelist')
+    rows = cursor.fetchall()
+    conn.close()
+    return [r['url'] for r in rows]
+
+def remove_from_whitelist(url: str):
+    conn = get_db_connection()
+    conn.cursor().execute('DELETE FROM whitelist WHERE url = ?', (url,))
+    conn.commit()
+    conn.close()

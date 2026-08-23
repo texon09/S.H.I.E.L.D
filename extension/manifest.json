@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "AI Phishing URL Detector",
+  "name": "S.H.I.E.L.D. — Smart Heuristic Intelligence for Evaluating Links & Domains",
   "version": "1.0.0",
   "description": "Scans the active tab URL for phishing indicators using machine learning.",
   "permissions": [
@@ -9,6 +9,12 @@
   ],
   "host_permissions": [
     "http://localhost:8000/*"
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["blocked.html"],
+      "matches": ["<all_urls>"]
+    }
   ],
   "background": {
     "service_worker": "background.js"

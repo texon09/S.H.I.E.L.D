@@ -1,0 +1,19 @@
+# How to Run S.H.I.E.L.D.
+
+If the servers ever stop, you can manually restart them by opening two separate terminal windows (Command Prompt or PowerShell) and running the following commands.
+
+### 1. Start the Backend API (Python)
+Open a terminal, navigate to your backend folder, and run the Uvicorn server:
+```bash
+cd "c:\Users\Tanisha P Paunikar\OneDrive\Desktop\npm run dev\backend"
+python -m uvicorn app.main:app --port 8000 --reload
+```
+
+### 2. Start the Frontend UI (React/Vite)
+Open a *second* terminal window, navigate to your frontend folder, and run the Vite server:
+```bash
+cd "c:\Users\Tanisha P Paunikar\OneDrive\Desktop\npm run dev\frontend"
+npm run dev
+```
+
+Once both are running, the web application will be accessible at: **http://localhost:5173**

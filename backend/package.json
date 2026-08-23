@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "tldextract": "^0.0.5"
+  }
+}

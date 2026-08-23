@@ -8,13 +8,12 @@ document.addEventListener("DOMContentLoaded", () => {
   const scannedUrlText = document.getElementById("scanned-url");
   const riskScoreText = document.getElementById("risk-score");
   const warningText = document.getElementById("warning-text");
-  const badge = document.getElementById("verdict-badge");
-  const alertCircleIcon = document.getElementById("alert-circle-icon");
-  const alertCircleOuter = document.querySelector(".alert-circle-outer");
+  const verdictTier = document.getElementById("verdict-tier");
+  const verdictBox = document.getElementById("verdict-box");
   const findingsList = document.getElementById("findings-list");
   
   const retryBtn = document.getElementById("retry-btn");
-  const closeBtn = document.getElementById("close-warning-btn");
+  const closeBtn = document.getElementById("close-btn");
 
   async function performScan() {
     loader.classList.remove("hidden");
@@ -27,11 +26,9 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
       
-      const activeTab = tabs[0];
-      const url = activeTab.url;
-      
+      const url = tabs[0].url;
       if (!url || !url.startsWith("http")) {
-        showError("The S.H.I.E.L.D. extension can only analyze HTTP/HTTPS website addresses.");
+        showError("S.H.I.E.L.D. only analyzes HTTP/HTTPS addresses.");
         return;
       }
       
@@ -40,21 +37,16 @@ document.addEventListener("DOMContentLoaded", () => {
       try {
         const response = await fetch(API_URL, {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ url: url })
         });
         
-        if (!response.ok) {
-          throw new Error(`API error ${response.status}`);
-        }
+        if (!response.ok) throw new Error("API error");
         
         const data = await response.json();
         renderResults(data);
       } catch (err) {
-        console.error("Extension scan failed:", err);
-        showError(null);
+        showError("SYSTEM OFFLINE. Cannot connect to engine.");
       }
     });
   }
@@ -63,83 +55,59 @@ document.addEventListener("DOMContentLoaded", () => {
     loader.classList.add("hidden");
     resultCard.classList.remove("hidden");
     
-    // Set risk score
     riskScoreText.textContent = data.risk_score;
     
-    // Reset layout classes
-    badge.className = "verdict-capsule-badge";
-    warningText.className = "verdict-title";
-    
+    let colorVar = '--safe-color';
     if (data.risk_tier === "safe") {
-      badge.textContent = "Safe";
-      badge.classList.add("badge-safe");
+      colorVar = '--safe-color';
+      verdictTier.textContent = "SAFE";
       warningText.textContent = "S.H.I.E.L.D. verified. Safe to visit.";
-      warningText.classList.add("title-safe");
-      
-      alertCircleOuter.style.backgroundColor = "var(--safe-bg)";
-      alertCircleIcon.textContent = "🛡️";
-      alertCircleIcon.style.color = "var(--safe-color)";
-      
     } else if (data.risk_tier === "suspicious") {
-      badge.textContent = "Suspicious";
-      badge.classList.add("badge-suspicious");
-      warningText.textContent = "Caution advised. Minor threat indicators detected.";
-      warningText.classList.add("title-suspicious");
-      
-      alertCircleOuter.style.backgroundColor = "var(--suspicious-bg)";
-      alertCircleIcon.textContent = "⚠️";
-      alertCircleIcon.style.color = "var(--suspicious-color)";
-      
+      colorVar = '--suspicious-color';
+      verdictTier.textContent = "CAUTION";
+      warningText.textContent = "Minor threat indicators detected.";
     } else {
-      badge.textContent = "Phishing";
-      badge.classList.add("badge-phishing");
-      warningText.textContent = "Strong phishing signals detected. Avoid this site.";
-      warningText.classList.add("title-phishing");
-      
-      alertCircleOuter.style.backgroundColor = "var(--phishing-bg)";
-      alertCircleIcon.textContent = "⚠️";
-      alertCircleIcon.style.color = "var(--phishing-color)";
+      colorVar = '--danger-color';
+      verdictTier.textContent = "DANGER";
+      warningText.textContent = "Strong phishing signals detected. Avoid.";
     }
 
-    // Populate Key Findings list (showing raw contributing score factors dynamically)
+    verdictBox.style.borderTopColor = `var(${colorVar})`;
+    verdictTier.style.color = `var(${colorVar})`;
+    riskScoreText.style.color = `var(${colorVar})`;
+
     findingsList.innerHTML = "";
-    
-    // Calculate display weights from the top features
     data.top_features.forEach(feat => {
-      const displayScore = Math.round(feat.weight * 100);
       const isRisky = feat.direction === "risky";
       
+      let plainLabel = feat.label.split(" (")[0]; 
+      if (plainLabel.includes("obfuscating")) plainLabel = "Hidden characters";
+      if (plainLabel.includes("URL length")) plainLabel = "Unusually long";
+      if (plainLabel.includes("subdomains")) plainLabel = "Mimics real brands";
+      if (plainLabel.includes("special characters")) plainLabel = "Suspicious symbols";
+      if (plainLabel.includes("IP address")) plainLabel = "Uses raw numbers";
+
       const row = document.createElement("div");
       row.className = "finding-row";
-      
-      const cleanLabel = feat.label.split(" (")[0]; // Remove details
-      const prefix = isRisky ? "+" : "-";
-      const colorClass = isRisky ? "risky" : "safe";
+      row.style.color = isRisky ? "var(--danger-color)" : "var(--safe-color)";
       
       row.innerHTML = `
-        <span class="finding-label">${cleanLabel}</span>
-        <span class="finding-score ${colorClass}">${prefix}${displayScore}</span>
+        <span>${plainLabel}</span>
+        <span>${isRisky ? "RISK" : "SAFE"}</span>
       `;
       findingsList.appendChild(row);
     });
   }
 
-  function showError(customMsg) {
+  function showError(msg) {
     loader.classList.add("hidden");
     resultCard.classList.add("hidden");
     errorCard.classList.remove("hidden");
-    if (customMsg) {
-      errorCard.querySelector(".error-text").textContent = customMsg;
-    } else {
-      errorCard.querySelector(".error-text").innerHTML = `⚠️ Cannot connect to backend server. Ensure the S.H.I.E.L.D. uvicorn engine is running on port 8000.`;
-    }
+    if (msg) document.getElementById("error-text").innerHTML = `[ ERROR ]<br><br>${msg}`;
   }
 
   retryBtn.addEventListener("click", performScan);
-  closeBtn.addEventListener("click", () => {
-    window.close();
-  });
+  closeBtn.addEventListener("click", () => window.close());
 
-  // Automatically scan on popup load
   performScan();
 });

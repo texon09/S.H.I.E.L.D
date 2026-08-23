@@ -16,11 +16,11 @@ from app.database import init_db, save_scan, get_scan_history
 
 app = FastAPI(title="AI-powered Phishing URL Detector API", version="1.0.0")
 
-# Enable CORS for frontend and extension (wildcard for dev simplicity)
+# Enable CORS for frontend and extension
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -29,10 +29,10 @@ app.add_middleware(
 classifier = PhishingClassifier()
 init_db()
 
-def resolve_redirects(url: str) -> str:
+def resolve_redirects(url: str) -> tuple[str, bool]:
     """
     Resolves HTTP redirects to find the final URL destination.
-    Defaults to the input URL on timeout or resolution failure.
+    Returns (final_url, evasion_detected).
     """
     normalized_url = url
     if not url.startswith(('http://', 'https://')):
@@ -45,11 +45,11 @@ def resolve_redirects(url: str) -> str:
         response = session.get(normalized_url, timeout=1.5, allow_redirects=True, headers={
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
         })
-        return response.url
+        return response.url, False
     except Exception as e:
-        # Fall back to original URL
-        print(f"Redirect resolution failed for {url}: {e}")
-        return normalized_url
+        # Evasion detected! A timeout or failure could be intentional
+        print(f"Redirect resolution failed for {url} (Possible Evasion): {e}")
+        return normalized_url, True
 
 def run_scan_pipeline(input_url: str) -> ScanResponse:
     """
@@ -59,31 +59,44 @@ def run_scan_pipeline(input_url: str) -> ScanResponse:
     start_time = time.time()
 
     # 1. Resolve redirects
-    final_url = resolve_redirects(input_url)
+    final_url, evasion_detected = resolve_redirects(input_url)
 
-    # 2. Run ML classifier
-    ml_prediction, ml_confidence, top_features = classifier.predict(final_url)
-
-    # 3. Check reputation
-    reputation_hit = check_reputation(final_url)
-
-    # 4. Consensus risk engine
-    # Base score comes from ML confidence
-    base_score = int(ml_confidence * 100)
+    # 2. Check whitelist
+    from app.database import get_whitelist
+    whitelisted_urls = get_whitelist()
     
-    # If reputation hit, force to high-risk (Phishing tier)
-    if reputation_hit:
-        risk_score = max(base_score, 95)
-    else:
-        risk_score = base_score
-
-    # Map risk score to tier
-    if risk_score <= 30:
+    if final_url in whitelisted_urls or input_url in whitelisted_urls:
+        # Bypass ML and reputation, force safe
+        ml_prediction = "legitimate"
+        ml_confidence = 0.0
+        reputation_hit = False
+        risk_score = 0
         risk_tier = "safe"
-    elif risk_score <= 60:
-        risk_tier = "suspicious"
+        top_features = []
+        evasion_detected = False
     else:
-        risk_tier = "phishing"
+        # 3. Run ML classifier
+        ml_prediction, ml_confidence, top_features = classifier.predict(final_url)
+    
+        # 4. Check reputation
+        reputation_hit = check_reputation(final_url)
+    
+        # 5. Consensus risk engine
+        base_score = int(ml_confidence * 100)
+        
+        if reputation_hit:
+            risk_score = max(base_score, 95)
+        elif evasion_detected:
+            risk_score = max(base_score, 85)
+        else:
+            risk_score = base_score
+    
+        if risk_score <= 30:
+            risk_tier = "safe"
+        elif risk_score <= 60:
+            risk_tier = "suspicious"
+        else:
+            risk_tier = "phishing"
 
     response_time_ms = int((time.time() - start_time) * 1000)
 
@@ -193,6 +206,71 @@ def adversarial_test(request: AdversarialRequest):
 @app.get("/api/history")
 def get_history():
     try:
+        from app.database import get_scan_history
         return get_scan_history(limit=50)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.delete("/api/history")
+def clear_history():
+    try:
+        from app.database import clear_scans
+        clear_scans()
+        return {"success": True, "message": "History cleared"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/whitelist")
+def get_whitelist_endpoint():
+    try:
+        from app.database import get_whitelist
+        return get_whitelist()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+from pydantic import BaseModel
+
+class WhitelistRequest(BaseModel):
+    url: str
+
+@app.post("/api/whitelist")
+def whitelist_url(req: WhitelistRequest):
+    try:
+        from app.database import add_to_whitelist
+        add_to_whitelist(req.url.strip())
+        return {"success": True, "message": f"{req.url} whitelisted"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.delete("/api/whitelist")
+def remove_whitelist_url(req: WhitelistRequest):
+    try:
+        from app.database import remove_from_whitelist
+        remove_from_whitelist(req.url.strip())
+        return {"success": True, "message": f"{req.url} removed from whitelist"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# Simple JSON file for settings persistence between Web App and Extension
+SETTINGS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'data', 'settings.json')
+
+@app.get("/api/settings")
+def get_settings():
+    import json
+    if os.path.exists(SETTINGS_FILE):
+        with open(SETTINGS_FILE, 'r') as f:
+            return json.load(f)
+    return {"activeBlocking": True, "saveHistory": True}
+
+from pydantic import BaseModel
+class SettingsRequest(BaseModel):
+    activeBlocking: bool
+    saveHistory: bool
+
+@app.post("/api/settings")
+def update_settings(req: SettingsRequest):
+    import json
+    settings = req.dict()
+    with open(SETTINGS_FILE, 'w') as f:
+        json.dump(settings, f)
+    return settings
