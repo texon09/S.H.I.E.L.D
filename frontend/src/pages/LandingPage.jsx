@@ -29,7 +29,11 @@ export default function LandingPage({ onScan, isLoading }) {
             Detects clever "typosquatting" tricks where scammers use fake characters to impersonate your bank or favorite brands.
           </p>
         </div>
-        <div className="col-4 panel hover-lift" style={{ borderTop: '4px solid var(--suspicious-color)' }}>
+        <div 
+          className="col-4 panel hover-lift" 
+          style={{ borderTop: '4px solid var(--suspicious-color)', cursor: 'pointer' }}
+          onClick={() => window.open("https://github.com/texon09/S.H.I.E.L.D/releases/tag/v1.0.0", "_blank")}
+        >
           <ShieldCheck size={32} color="var(--suspicious-color)" style={{ marginBottom: '16px' }} />
           <h3 style={{ marginBottom: '8px' }}>Active Extension</h3>
           <p style={{ color: 'var(--text-muted)', fontSize: '14px' }}>

@@ -1,4 +1,4 @@
-const BACKEND_URL = "http://localhost:8000/api/scan";
+const BACKEND_URL = "https://s-h-i-e-l-d-ggtx.onrender.com/api/scan";
 
 // Cache to prevent duplicate scans for the same URL in a short period
 const scanCache = new Map();

@@ -1,9 +1,8 @@
 import React from 'react';
-import { toast } from 'react-hot-toast';
 
 export default function Header({ activeTab, setActiveTab }) {
   const handleInstallClick = () => {
-    toast.success("To install: Go to chrome://extensions and Load Unpacked 'extension' folder.");
+    window.open("https://github.com/texon09/S.H.I.E.L.D/releases/tag/v1.0.0", "_blank");
   };
 
   return (
