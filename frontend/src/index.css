@@ -184,8 +184,14 @@ body {
 /* Scanner Bar */
 .scanner-bar {
   display: flex;
-  border: 1px solid var(--border-color);
   background: var(--bg-panel);
+  border: 2px solid var(--safe-color);
+  box-shadow: 0 0 15px rgba(0, 255, 102, 0.2);
+  transition: all 0.3s ease;
+}
+
+.scanner-bar:focus-within {
+  box-shadow: 0 0 25px rgba(0, 255, 102, 0.5);
 }
 
 .scanner-input {
@@ -201,7 +207,7 @@ body {
 
 .scanner-btn {
   border: none;
-  border-left: 1px solid var(--border-color);
+  border-left: 2px solid var(--safe-color);
   margin: 0;
   padding: 0 32px;
   display: flex;
@@ -454,21 +460,33 @@ body {
   }
   
   .scanner-bar {
-    flex-direction: column;
+    flex-direction: row;
   }
   
   .scanner-input {
-    padding: 16px;
+    padding: 16px 12px;
     font-size: 14px;
-    text-align: center;
+    text-align: left;
   }
 
   .scanner-btn {
-    border-left: none;
-    border-top: 1px solid var(--border-color);
-    padding: 20px;
-    width: 100%;
+    border-left: 2px solid var(--safe-color);
+    border-top: none;
+    padding: 0;
+    width: 60px;
+    height: auto;
     font-size: 16px;
+  }
+
+  .scanner-btn-text {
+    display: none;
+  }
+
+  .panel h2.mono {
+    font-size: 16px !important;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .feature-row {

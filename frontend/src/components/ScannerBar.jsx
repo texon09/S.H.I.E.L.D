@@ -21,7 +21,7 @@ export default function ScannerBar({ onScan, isLoading, placeholder = "ENTER URL
       />
       <button type="submit" className="btn btn-primary scanner-btn" disabled={isLoading}>
         {isLoading ? <Loader2 className="animate-spin" size={18} /> : <Search size={18} />}
-        {isLoading ? 'SCANNING' : 'SCAN'}
+        <span className="scanner-btn-text">{isLoading ? 'SCANNING' : 'SCAN'}</span>
       </button>
     </form>
   );
