@@ -11,13 +11,13 @@ let extensionSettings = { activeBlocking: true };
 // Fetch settings and whitelist from API periodically
 async function syncSettings() {
   try {
-    const res = await fetch("http://localhost:8000/api/settings");
+    const res = await fetch("https://s-h-i-e-l-d-ggtx.onrender.com/api/settings");
     if (res.ok) {
       extensionSettings = await res.json();
     }
     
     // Also sync the global whitelist so web-dashboard whitelists apply to the extension instantly
-    const whitelistRes = await fetch("http://localhost:8000/api/whitelist");
+    const whitelistRes = await fetch("https://s-h-i-e-l-d-ggtx.onrender.com/api/whitelist");
     if (whitelistRes.ok) {
       const dbWhitelist = await whitelistRes.json();
       dbWhitelist.forEach(url => allowedUrls.add(url));
@@ -36,7 +36,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     sendResponse({ success: true });
   } else if (request.action === "whitelist_and_proceed" && request.url) {
     allowedUrls.add(request.url);
-    fetch("http://localhost:8000/api/whitelist", {
+    fetch("https://s-h-i-e-l-d-ggtx.onrender.com/api/whitelist", {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ url: request.url })

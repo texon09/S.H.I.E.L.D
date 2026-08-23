@@ -1,4 +1,4 @@
-const API_URL = "http://localhost:8000/api/scan";
+const API_URL = "https://s-h-i-e-l-d-ggtx.onrender.com/api/scan";
 
 document.addEventListener("DOMContentLoaded", () => {
   const loader = document.getElementById("loader");
