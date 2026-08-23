@@ -188,7 +188,7 @@ body {
   background: var(--bg-panel);
 }
 
-.scanner-bar input {
+.scanner-input {
   flex: 1;
   background: transparent;
   border: none;
@@ -199,10 +199,16 @@ body {
   outline: none;
 }
 
-.scanner-bar button {
+.scanner-btn {
   border: none;
   border-left: 1px solid var(--border-color);
+  margin: 0;
   padding: 0 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
 }
 
 /* Landing Page Specifics */
@@ -238,6 +244,7 @@ body {
   font-size: 64px;
   margin-bottom: 16px;
   font-weight: 700;
+  letter-spacing: 4px;
   background: linear-gradient(90deg, #fff, #888);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -436,23 +443,32 @@ body {
   }
 
   .hero-title {
-    font-size: 36px;
-    letter-spacing: 2px !important;
+    font-size: 38px;
+    letter-spacing: 2px;
   }
 
   .hero-subtitle {
-    font-size: 16px;
+    font-size: 15px;
     padding: 0 16px;
+    letter-spacing: 0;
   }
   
   .scanner-bar {
     flex-direction: column;
   }
   
-  .scanner-bar button {
+  .scanner-input {
+    padding: 16px;
+    font-size: 14px;
+    text-align: center;
+  }
+
+  .scanner-btn {
     border-left: none;
     border-top: 1px solid var(--border-color);
-    padding: 16px;
+    padding: 20px;
+    width: 100%;
+    font-size: 16px;
   }
 
   .feature-row {
