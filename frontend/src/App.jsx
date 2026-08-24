@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Toaster, toast } from 'react-hot-toast';
+import { Analytics } from '@vercel/analytics/react';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import LandingPage from './pages/LandingPage';
@@ -81,6 +82,7 @@ export default function App() {
           fontFamily: "'JetBrains Mono', monospace"
         }
       }}/>
+      <Analytics />
       
       {activeTab !== 'landing' && (
         <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
