@@ -2,6 +2,8 @@
 
 A real-time, end-to-end intelligent security system designed to protect users from malicious hyperlink attacks. S.H.I.E.L.D. combines a hyperparameter-optimized scikit-learn machine learning classifier, a multi-consensus reputation engine, and a dual-client system (a React web application featuring cinematic transition sequences and a Manifest V3 browser extension).
 
+### LIVE PROJECT LINK:  https://s-h-i-e-l-d-psi.vercel.app/
+
 ---
 
 ## 1. System Architecture
@@ -10,22 +12,22 @@ S.H.I.E.L.D. leverages a distributed architecture connecting lightweight endpoin
 
 ```mermaid
 graph TD
-    subgraph Clients [Client Layer]
-        Ext[Chrome Extension MV3 Popup & Badge]
-        Dashboard[React Web Dashboard]
+    subgraph Clients["Client Layer"]
+        Ext["Chrome Extension MV3 Popup & Badge"]
+        Dashboard["React Web Dashboard"]
     end
 
-    subgraph API [FastAPI Backend Service]
-        Endpoint[/api/scan]
-        AdvEndpoint[/api/adversarial-test]
-        HistoryEndpoint[/api/history]
-        
-        direction_engine{Consensus Risk Engine}
-        resolver[Redirect Resolver]
-        extractor[Lexical Feature Extractor]
-        model[Random Forest Pipeline Model]
-        reputation[Reputation Check / PhishTank]
-        db[(SQLite Database)]
+    subgraph API["FastAPI Backend Service"]
+        Endpoint["POST /api/scan"]
+        AdvEndpoint["POST /api/adversarial-test"]
+        HistoryEndpoint["GET /api/history"]
+
+        Engine{"Consensus Risk Engine"}
+        Resolver["Redirect Resolver"]
+        Extractor["Lexical Feature Extractor"]
+        Model["Random Forest Pipeline Model"]
+        Reputation["Reputation Check / PhishTank"]
+        DB[("SQLite Database")]
     end
 
     Ext -->|POST /api/scan| Endpoint
@@ -33,15 +35,16 @@ graph TD
     Dashboard -->|POST /api/adversarial-test| AdvEndpoint
     Dashboard -->|GET /api/history| HistoryEndpoint
 
-    Endpoint --> resolver
-    resolver -->|Resolved Destination URL| extractor
-    extractor -->|19 Lexical Variables| model
-    Endpoint --> reputation
-    
-    model --> direction_engine
-    reputation --> direction_engine
-    direction_engine -->|Log Transaction| db
-    direction_engine -->|Verdict & Explanations| Endpoint
+    Endpoint --> Resolver
+    Resolver -->|Resolved Destination URL| Extractor
+    Extractor -->|19 Lexical Features| Model
+    Endpoint --> Reputation
+
+    Model --> Engine
+    Reputation --> Engine
+
+    Engine -->|Log Transaction| DB
+    Engine -->|Verdict & Explanations| Endpoint
 ```
 
 ---
