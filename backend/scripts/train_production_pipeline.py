@@ -23,6 +23,10 @@ from sklearn.metrics import classification_report, confusion_matrix, roc_auc_sco
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+from app.classifier import PhishingFeatureExtractor, CollinearityFilter
+
 # Define paths
 DATA_PATH = "docs/real_world_dataset.csv"
 OUTPUT_DIR = "backend/data"
@@ -32,63 +36,7 @@ METRICS_EXPORT_PATH = os.path.join(OUTPUT_DIR, "pipeline_metrics.txt")
 # Ensure output directories exist
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-# --------------------------------------------------------------------------
-# 1. Custom Transformers (Feature Engineering & Selection)
-# --------------------------------------------------------------------------
-
-class PhishingFeatureExtractor(BaseEstimator, TransformerMixin):
-    """
-    Principal ML Engineer feature interaction generator.
-    Creates domain-specific interaction terms cleanly without data leakage.
-    """
-    def __init__(self):
-        pass
-
-    def fit(self, X, y=None):
-        return self
-
-    def transform(self, X):
-        # Operate on a copy to avoid SettingWithCopyWarnings
-        X_out = X.copy()
-        
-        # 1. Interaction between obfuscation ratio and URL length
-        X_out['ObfuscationURLLengthInteraction'] = X_out['ObfuscationRatio'] * X_out['URLLength']
-        
-        # 2. Subdomain density in the domain length
-        X_out['SubdomainPerDomainLength'] = X_out['NoOfSubDomain'] / (X_out['DomainLength'] + 1.0)
-        
-        # 3. Special character density relative to letters in URL
-        X_out['SpecialCharPerLetter'] = X_out['SpacialCharRatioInURL'] / (X_out['LetterRatioInURL'] + 1e-5)
-        
-        return X_out
-
-
-class CollinearityFilter(BaseEstimator, TransformerMixin):
-    """
-    Filters out highly correlated numerical features.
-    Computes standard correlation matrices on numerical training subsets dynamically.
-    """
-    def __init__(self, threshold=0.90):
-        self.threshold = threshold
-        self.keep_indices_ = []
-
-    def fit(self, X, y=None):
-        # Compute correlation coefficients row-wise=False (column features)
-        corr_matrix = np.abs(np.corrcoef(X, rowvar=False))
-        # Handle zero-variance division outputs (standard scaler handles std=0)
-        corr_matrix = np.nan_to_num(corr_matrix)
-        
-        upper = np.triu(corr_matrix, k=1)
-        drop_indices = []
-        for col in range(upper.shape[1]):
-            if any(upper[:, col] > self.threshold):
-                drop_indices.append(col)
-                
-        self.keep_indices_ = [i for i in range(X.shape[1]) if i not in drop_indices]
-        return self
-
-    def transform(self, X):
-        return X[:, self.keep_indices_]
+# Custom Transformers are imported from app.classifier
 
 
 # --------------------------------------------------------------------------
@@ -274,7 +222,7 @@ def run_ml_pipeline(sample_size=30000):
     y_pred_proba = production_pipeline.predict_proba(X_test)[:, 1]
 
     # Evaluation metrics
-    report = classification_report(y_test, y_pred, target_names=["Phishing (0)", "Legitimate (1)"])
+    report = classification_report(y_test, y_pred, target_names=["Legitimate (0)", "Phishing (1)"])
     conf_matrix = confusion_matrix(y_test, y_pred)
     roc_auc = roc_auc_score(y_test, y_pred_proba)
 

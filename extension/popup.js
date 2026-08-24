@@ -1,4 +1,4 @@
-const API_URL = "https://s-h-i-e-l-d-ggtx.onrender.com/api/scan";
+const API_BASES = ["http://localhost:8000", "https://s-h-i-e-l-d-ggtx.onrender.com"];
 
 document.addEventListener("DOMContentLoaded", () => {
   const loader = document.getElementById("loader");
@@ -34,18 +34,27 @@ document.addEventListener("DOMContentLoaded", () => {
       
       scannedUrlText.textContent = url;
       
-      try {
-        const response = await fetch(API_URL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ url: url })
-        });
-        
-        if (!response.ok) throw new Error("API error");
-        
-        const data = await response.json();
-        renderResults(data);
-      } catch (err) {
+      let success = false;
+      for (const apiBase of API_BASES) {
+        try {
+          const response = await fetch(`${apiBase}/api/scan`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ url: url })
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            renderResults(data);
+            success = true;
+            break;
+          }
+        } catch (err) {
+          console.warn(`Failed to connect to ${apiBase}:`, err);
+        }
+      }
+      
+      if (!success) {
         showError("SYSTEM OFFLINE. Cannot connect to engine.");
       }
     });

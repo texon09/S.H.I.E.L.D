@@ -1,4 +1,4 @@
-const BACKEND_URL = "https://s-h-i-e-l-d-ggtx.onrender.com/api/scan";
+const API_BASES = ["http://localhost:8000", "https://s-h-i-e-l-d-ggtx.onrender.com"];
 
 // Cache to prevent duplicate scans for the same URL in a short period
 const scanCache = new Map();
@@ -10,20 +10,23 @@ let extensionSettings = { activeBlocking: true };
 
 // Fetch settings and whitelist from API periodically
 async function syncSettings() {
-  try {
-    const res = await fetch("https://s-h-i-e-l-d-ggtx.onrender.com/api/settings");
-    if (res.ok) {
-      extensionSettings = await res.json();
+  for (const apiBase of API_BASES) {
+    try {
+      const res = await fetch(`${apiBase}/api/settings`);
+      if (res.ok) {
+        extensionSettings = await res.json();
+        
+        // Also sync the global whitelist so web-dashboard whitelists apply to the extension instantly
+        const whitelistRes = await fetch(`${apiBase}/api/whitelist`);
+        if (whitelistRes.ok) {
+          const dbWhitelist = await whitelistRes.json();
+          dbWhitelist.forEach(url => allowedUrls.add(url));
+        }
+        return; // Successfully synced, exit early
+      }
+    } catch (e) {
+      // Try next apiBase
     }
-    
-    // Also sync the global whitelist so web-dashboard whitelists apply to the extension instantly
-    const whitelistRes = await fetch("https://s-h-i-e-l-d-ggtx.onrender.com/api/whitelist");
-    if (whitelistRes.ok) {
-      const dbWhitelist = await whitelistRes.json();
-      dbWhitelist.forEach(url => allowedUrls.add(url));
-    }
-  } catch (e) {
-    // Backend offline, default to safe mode
   }
 }
 // Sync every 5 seconds for real-time responsiveness
@@ -36,11 +39,18 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     sendResponse({ success: true });
   } else if (request.action === "whitelist_and_proceed" && request.url) {
     allowedUrls.add(request.url);
-    fetch("https://s-h-i-e-l-d-ggtx.onrender.com/api/whitelist", {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ url: request.url })
-    }).catch(e => console.error("Failed to whitelist", e));
+    (async () => {
+      for (const apiBase of API_BASES) {
+        try {
+          const res = await fetch(`${apiBase}/api/whitelist`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ url: request.url })
+          });
+          if (res.ok) break;
+        } catch (e) {}
+      }
+    })();
     sendResponse({ success: true });
   } else if (request.action === "close_tab") {
     if (sender.tab) {
@@ -65,27 +75,29 @@ async function scanUrl(url) {
     }
   }
 
-  try {
-    const response = await fetch(BACKEND_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({ url: url })
-    });
+  for (const apiBase of API_BASES) {
+    try {
+      const response = await fetch(`${apiBase}/api/scan`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ url: url })
+      });
 
-    if (response.ok) {
-      const data = await response.json();
-      scanCache.set(url, { data: data, timestamp: Date.now() });
-      // Limit cache size
-      if (scanCache.size > 200) {
-        const firstKey = scanCache.keys().next().value;
-        scanCache.delete(firstKey);
+      if (response.ok) {
+        const data = await response.json();
+        scanCache.set(url, { data: data, timestamp: Date.now() });
+        // Limit cache size
+        if (scanCache.size > 200) {
+          const firstKey = scanCache.keys().next().value;
+          scanCache.delete(firstKey);
+        }
+        return data;
       }
-      return data;
+    } catch (error) {
+      console.warn(`Failed to query Phishing scan API at ${apiBase}:`, error);
     }
-  } catch (error) {
-    console.error("Failed to query Phishing scan API:", error);
   }
   return null;
 }

@@ -60,9 +60,9 @@ def fetch_data():
 
     data = []
     for url in phishing_urls:
-        data.append({'url': url, 'label': 0})
-    for url in legit_urls:
         data.append({'url': url, 'label': 1})
+    for url in legit_urls:
+        data.append({'url': url, 'label': 0})
         
     df = pd.DataFrame(data)
     

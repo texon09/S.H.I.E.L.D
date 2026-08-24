@@ -7,15 +7,7 @@ import tldextract
 import numpy as np
 import pandas as pd
 import joblib
-
-# Workaround to resolve unpickling of custom pipeline classes
-try:
-    sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
-    import backend.scripts.train_production_pipeline as train_script
-    sys.modules['__main__'].PhishingFeatureExtractor = train_script.PhishingFeatureExtractor
-    sys.modules['__main__'].CollinearityFilter = train_script.CollinearityFilter
-except Exception:
-    pass
+from sklearn.base import BaseEstimator, TransformerMixin
 
 FEATURE_NAMES = [
     'URLLength', 'DomainLength', 'IsDomainIP', 'TLDLength', 'NoOfSubDomain', 
@@ -190,6 +182,61 @@ def extract_features(url: str) -> dict:
         'IsHTTPS': is_https
     }
 
+class PhishingFeatureExtractor(BaseEstimator, TransformerMixin):
+    """
+    Principal ML Engineer feature interaction generator.
+    Creates domain-specific interaction terms cleanly without data leakage.
+    """
+    def __init__(self):
+        pass
+
+    def fit(self, X, y=None):
+        return self
+
+    def transform(self, X):
+        # Operate on a copy to avoid SettingWithCopyWarnings
+        X_out = X.copy()
+        
+        # 1. Interaction between obfuscation ratio and URL length
+        X_out['ObfuscationURLLengthInteraction'] = X_out['ObfuscationRatio'] * X_out['URLLength']
+        
+        # 2. Subdomain density in the domain length
+        X_out['SubdomainPerDomainLength'] = X_out['NoOfSubDomain'] / (X_out['DomainLength'] + 1.0)
+        
+        # 3. Special character density relative to letters in URL
+        X_out['SpecialCharPerLetter'] = X_out['SpacialCharRatioInURL'] / (X_out['LetterRatioInURL'] + 1e-5)
+        
+        return X_out
+
+
+class CollinearityFilter(BaseEstimator, TransformerMixin):
+    """
+    Filters out highly correlated numerical features.
+    Computes correlation matrices on numerical training subsets dynamically.
+    """
+    def __init__(self, threshold=0.90):
+        self.threshold = threshold
+        self.keep_indices_ = []
+
+    def fit(self, X, y=None):
+        # Compute correlation coefficients row-wise=False (column features)
+        corr_matrix = np.abs(np.corrcoef(X, rowvar=False))
+        # Handle zero-variance division outputs (standard scaler handles std=0)
+        corr_matrix = np.nan_to_num(corr_matrix)
+        
+        upper = np.triu(corr_matrix, k=1)
+        drop_indices = []
+        for col in range(upper.shape[1]):
+            if any(upper[:, col] > self.threshold):
+                drop_indices.append(col)
+                
+        self.keep_indices_ = [i for i in range(X.shape[1]) if i not in drop_indices]
+        return self
+
+    def transform(self, X):
+        return X[:, self.keep_indices_]
+
+
 class PhishingClassifier:
     def __init__(self, model_dir: str = None):
         if model_dir is None:
@@ -204,12 +251,6 @@ class PhishingClassifier:
     def load_model(self):
         if os.path.exists(self.model_path):
             try:
-                # Add Python sys.path mapping to load PhishingFeatureExtractor & CollinearityFilter
-                sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
-                import backend.scripts.train_production_pipeline as train_script
-                sys.modules['__main__'].PhishingFeatureExtractor = train_script.PhishingFeatureExtractor
-                sys.modules['__main__'].CollinearityFilter = train_script.CollinearityFilter
-                
                 self.model = joblib.load(self.model_path)
                 
                 # Fetch feature importances of the fitted Random Forest classifier
