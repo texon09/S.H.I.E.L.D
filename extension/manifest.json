@@ -1,14 +1,15 @@
 {
   "manifest_version": 3,
   "name": "S.H.I.E.L.D. — Smart Heuristic Intelligence for Evaluating Links & Domains",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Scans the active tab URL for phishing indicators using machine learning.",
   "permissions": [
     "activeTab",
     "tabs"
   ],
   "host_permissions": [
-    "https://s-h-i-e-l-d-ggtx.onrender.com/*"
+    "https://s-h-i-e-l-d-ggtx.onrender.com/*",
+    "http://localhost:8000/*"
   ],
   "web_accessible_resources": [
     {
