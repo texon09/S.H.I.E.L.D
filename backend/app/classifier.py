@@ -294,13 +294,16 @@ class PhishingClassifier:
         X = pd.DataFrame([features_dict], columns=FEATURE_NAMES)
 
         if self.model is None:
-            # Heuristic model if pipeline not loaded
-            risk_score = 0.0
-            if features_dict['IsDomainIP'] == 1: risk_score += 0.4
-            if features_dict['IsHTTPS'] == 0: risk_score += 0.3
-            if features_dict['URLLength'] > 80: risk_score += 0.2
+            # Multi-factor continuous heuristic if pipeline not loaded
+            risk_score = 0.05
+            if features_dict['IsDomainIP'] == 1: risk_score += 0.35
+            if features_dict['IsHTTPS'] == 0: risk_score += 0.15
+            if features_dict['NoOfSubDomain'] > 2: risk_score += 0.15
+            if features_dict['HasObfuscation'] == 1: risk_score += 0.10
+            if features_dict['DegitRatioInURL'] > 0.25: risk_score += 0.10
+            if features_dict['SpacialCharRatioInURL'] > 0.20: risk_score += 0.10
             
-            confidence = min(max(risk_score, 0.0), 1.0)
+            confidence = min(max(risk_score, 0.0), 0.99)
             verdict = "phishing" if confidence >= 0.5 else "legitimate"
             importances = {name: 1.0/len(FEATURE_EXPLANATIONS) for name in FEATURE_EXPLANATIONS.keys()}
         else:

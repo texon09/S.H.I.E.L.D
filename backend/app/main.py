@@ -29,6 +29,36 @@ app.add_middleware(
 classifier = PhishingClassifier()
 init_db()
 
+import tldextract
+
+TRUSTED_DOMAINS = {
+    "google.com", "google.co.in", "google.co.uk", "google.ca", "google.de", "google.fr", "google.co.jp",
+    "youtube.com", "youtu.be",
+    "amazon.com", "amazon.co.uk", "amazon.de", "amazon.in", "amazon.co.jp", "amazon.ca", "amazon.es", "amazon.it",
+    "microsoft.com", "live.com", "office.com", "azure.com", "github.com", "linkedin.com", "bing.com",
+    "apple.com", "icloud.com",
+    "wikipedia.org", "wikimedia.org",
+    "facebook.com", "instagram.com", "whatsapp.com",
+    "twitter.com", "x.com",
+    "netflix.com", "spotify.com", "reddit.com", "stackoverflow.com", "medium.com", "yahoo.com", "paypal.com",
+    "cloudflare.com", "vercel.com", "render.com", "gitlab.com", "npm.com", "npmjs.com"
+}
+
+def is_trusted_authority(url: str) -> bool:
+    """
+    Checks if the apex domain of a URL belongs to a verified trusted authority.
+    Uses strict tldextract parsing so attackers cannot spoof via subdomains
+    (e.g., 'amazon.com.evil.ru' has registered_domain 'evil.ru', NOT 'amazon.com').
+    """
+    try:
+        if not url.startswith(('http://', 'https://')):
+            url = 'http://' + url
+        ext = tldextract.extract(url)
+        registered = ext.registered_domain.lower()
+        return registered in TRUSTED_DOMAINS
+    except Exception:
+        return False
+
 def resolve_redirects(url: str) -> tuple[str, bool]:
     """
     Resolves HTTP redirects to find the final URL destination.
@@ -41,15 +71,17 @@ def resolve_redirects(url: str) -> tuple[str, bool]:
     try:
         session = requests.Session()
         session.max_redirects = 5
-        # Set a short timeout (1.5s) to avoid blocking the main thread
-        response = session.get(normalized_url, timeout=1.5, allow_redirects=True, headers={
+        response = session.get(normalized_url, timeout=2.5, allow_redirects=True, headers={
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
         })
-        return response.url, False
+        # Legitimate evasion is when redirect hops are excessive (>= 4 hops)
+        evasion = False
+        if len(response.history) >= 4:
+            evasion = True
+        return response.url, evasion
     except Exception as e:
-        # Evasion detected! A timeout or failure could be intentional
-        print(f"Redirect resolution failed for {url} (Possible Evasion): {e}")
-        return normalized_url, True
+        # A timeout, unreachable host, or bot blockage is NOT an evasion attack.
+        return normalized_url, False
 
 def run_scan_pipeline(input_url: str) -> ScanResponse:
     """
@@ -61,11 +93,20 @@ def run_scan_pipeline(input_url: str) -> ScanResponse:
     # 1. Resolve redirects
     final_url, evasion_detected = resolve_redirects(input_url)
 
-    # 2. Check whitelist
+    # 2. Check custom whitelist
     from app.database import get_whitelist
-    whitelisted_urls = get_whitelist()
+    whitelisted_urls = [w.lower().strip() for w in get_whitelist()]
     
-    if final_url in whitelisted_urls or input_url in whitelisted_urls:
+    is_whitelisted = False
+    try:
+        ext_final = tldextract.extract(final_url)
+        reg_final = ext_final.registered_domain.lower()
+        if final_url.lower() in whitelisted_urls or input_url.lower() in whitelisted_urls or reg_final in whitelisted_urls:
+            is_whitelisted = True
+    except Exception:
+        pass
+
+    if is_whitelisted:
         # Bypass ML and reputation, force safe
         ml_prediction = "legitimate"
         ml_confidence = 0.0
@@ -74,14 +115,25 @@ def run_scan_pipeline(input_url: str) -> ScanResponse:
         risk_tier = "safe"
         top_features = []
         evasion_detected = False
+    elif is_trusted_authority(final_url) or is_trusted_authority(input_url):
+        # 3. Trusted domain authority (e.g. amazon.com, google.com, github.com)
+        # Even if the URL has complex query tokens, product IDs or commits, it's authentic.
+        ml_prediction, raw_conf, top_features = classifier.predict(final_url)
+        reputation_hit = False
+        evasion_detected = False
+        # Bound confidence to a negligible safe baseline (0.0 to 0.08)
+        ml_confidence = min(raw_conf * 0.08, 0.08)
+        base_score = int(ml_confidence * 100)
+        risk_score = base_score
+        risk_tier = "safe"
     else:
-        # 3. Run ML classifier
+        # 4. Run ML classifier
         ml_prediction, ml_confidence, top_features = classifier.predict(final_url)
     
-        # 4. Check reputation
+        # 5. Check reputation
         reputation_hit = check_reputation(final_url)
     
-        # 5. Consensus risk engine
+        # 6. Consensus risk engine
         base_score = int(ml_confidence * 100)
         
         if reputation_hit:

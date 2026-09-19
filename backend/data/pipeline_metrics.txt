@@ -1,20 +1,20 @@
-S.H.I.E.L.D. Pipeline Evaluation Report
-======================================
-Sample Trained: 750 records
-Winning Model Classifier: GradientBoosting
-Optimal Hyperparameters: {'classifier__n_estimators': 50, 'classifier__max_depth': 3, 'classifier__learning_rate': 0.1}
-ROC-AUC Score: 0.9993
+S.H.I.E.L.D. Calibrated Pipeline Evaluation Report
+===============================================
+Sample Size: 20,000 balanced URLs
+Model: RandomForestClassifier (n_estimators=100, max_depth=16)
+ROC-AUC Score: 0.9118
+Training Time: 0.69s
 
 Classification Details:
                 precision    recall  f1-score   support
 
-Legitimate (0)       0.98      0.99      0.98        90
-  Phishing (1)       0.98      0.97      0.97        60
+Legitimate (0)       0.81      0.87      0.84      2000
+  Phishing (1)       0.86      0.80      0.83      2000
 
-      accuracy                           0.98       150
-     macro avg       0.98      0.98      0.98       150
-  weighted avg       0.98      0.98      0.98       150
+      accuracy                           0.83      4000
+     macro avg       0.84      0.83      0.83      4000
+  weighted avg       0.84      0.83      0.83      4000
 
 Confusion Matrix:
-[[89  1]
- [ 2 58]]
+[[1741  259]
+ [ 407 1593]]

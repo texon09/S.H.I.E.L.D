@@ -27,4 +27,5 @@ Thumbs.db
 # Large binary files (Dataset remains local or tracked separately)
 *.csv
 *.pkl
+!backend/data/phishing_pipeline.pkl
 *.db
